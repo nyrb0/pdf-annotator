@@ -88,7 +88,6 @@ declare global {
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-// Hardcoded hex values — no CSS variables, works in any React environment.
 
 interface Theme {
   bgPage: string;
@@ -102,50 +101,74 @@ interface Theme {
   borderStrong: string;
   shadow: string;
   shadowModal: string;
+  gradientMain: string;
+  gradientSecondary: string;
+  colorSecondary: string;
 }
 
 const LIGHT: Theme = {
-  bgPage: "#F5F4F1",
+  bgPage: "#F8F7F6",
   bgSurface: "#FFFFFF",
-  bgSubtle: "#F0EEE9",
-  bgInput: "#F7F6F3",
-  text: "#1A1916",
-  textMuted: "#6B6863",
-  textFaint: "#9B9790",
-  border: "#E2DED7",
-  borderStrong: "#C8C4BC",
-  shadow: "0 2px 12px rgba(0,0,0,0.10)",
-  shadowModal: "0 8px 32px rgba(0,0,0,0.18)",
+  bgSubtle: "#F2F1F0",
+  bgInput: "#FAFAF9",
+  text: "#1A1A1A",
+  textMuted: "#656565",
+  textFaint: "#989898",
+  border: "#E0DEDD",
+  borderStrong: "#CCCCCC",
+  shadow: "0 2px 12px rgba(0,0,0,0.08)",
+  shadowModal: "0 8px 32px rgba(0,0,0,0.15)",
+  gradientMain:
+    "linear-gradient(180deg, #0c2c1c 0%, #1a5031 50%, #2d7d46 100%)",
+  gradientSecondary: "linear-gradient(135deg, #23c634, #6366f1)",
+  colorSecondary: "#1b6845",
 };
 
 const DARK: Theme = {
-  bgPage: "#1A1916",
-  bgSurface: "#242320",
-  bgSubtle: "#2E2C29",
-  bgInput: "#2A2826",
-  text: "#F0EDE8",
-  textMuted: "#A09C96",
-  textFaint: "#6B6763",
-  border: "#3A3834",
-  borderStrong: "#4E4B46",
+  bgPage: "#0D0D0D",
+  bgSurface: "#1A1A1A",
+  bgSubtle: "#262626",
+  bgInput: "#1F1F1F",
+  text: "#F0F0F0",
+  textMuted: "#A5A5A5",
+  textFaint: "#717171",
+  border: "#383838",
+  borderStrong: "#4A4A4A",
   shadow: "0 2px 12px rgba(0,0,0,0.40)",
   shadowModal: "0 8px 32px rgba(0,0,0,0.55)",
+  gradientMain:
+    "linear-gradient(180deg, #0c2c1c 0%, #1a5031 50%, #2d7d46 100%)",
+  gradientSecondary: "linear-gradient(135deg, #23c634, #6366f1)",
+  colorSecondary: "#1b6845",
 };
 
-function useTheme(): Theme {
+// ─── Theme Hook ───────────────────────────────────────────────────────────────
+
+function useTheme(): [Theme, boolean, (dark: boolean) => void] {
   const prefersDark = (): boolean =>
     window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
 
-  const [dark, setDark] = useState<boolean>(prefersDark);
+  const [dark, setDark] = useState<boolean>(() => {
+    const saved = localStorage.getItem("pdfAnnotatorDark");
+    if (saved !== null) return saved === "true";
+    return prefersDark();
+  });
+
+  useEffect(() => {
+    localStorage.setItem("pdfAnnotatorDark", dark.toString());
+  }, [dark]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = (e: MediaQueryListEvent): void => setDark(e.matches);
+    const handler = (e: MediaQueryListEvent): void => {
+      const saved = localStorage.getItem("pdfAnnotatorDark");
+      if (saved === null) setDark(e.matches);
+    };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  return dark ? DARK : LIGHT;
+  return [dark ? DARK : LIGHT, dark, setDark];
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -211,7 +234,7 @@ function downloadJSON(list: Annotation[]): void {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PDFAnnotator() {
-  const tk = useTheme();
+  const [tk, isDark, setIsDark] = useTheme();
 
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
   const [pages, setPages] = useState<PageData[]>([]);
@@ -353,15 +376,12 @@ export default function PDFAnnotator() {
 
     if (!element || !container) return;
 
-    // Получаем позицию элемента относительно контейнера
     const elementRect = element.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
 
-    // Вычисляем смещение от верхней части контейнера
     const scrollOffset =
       container.scrollTop + (elementRect.top - containerRect.top) - 100;
 
-    // Плавная прокрутка
     container.scrollTo({
       top: scrollOffset,
       behavior: "smooth",
@@ -436,6 +456,21 @@ export default function PDFAnnotator() {
     fontSize: 13,
     color: tk.text,
     fontFamily: "inherit",
+    transition: "all 0.2s ease",
+    ...overrides,
+  });
+
+  const primaryBtn = (overrides?: CSSProperties): CSSProperties => ({
+    background: tk.gradientMain,
+    border: "none",
+    borderRadius: 6,
+    cursor: "pointer",
+    fontSize: 13,
+    color: "#FFFFFF",
+    fontFamily: "inherit",
+    fontWeight: 600,
+    transition: "all 0.2s ease",
+    boxShadow: `0 4px 12px rgba(12, 44, 28, 0.3)`,
     ...overrides,
   });
 
@@ -491,6 +526,7 @@ export default function PDFAnnotator() {
                   padding: "3px 7px",
                   fontSize: 16,
                   color: tk.textMuted,
+                  boxShadow: "none",
                 })}
                 aria-label="Закрыть панель"
               >
@@ -561,6 +597,7 @@ export default function PDFAnnotator() {
                     cursor: "pointer",
                     textAlign: "left",
                     fontFamily: "inherit",
+                    transition: "all 0.2s ease",
                   }}
                 >
                   <span
@@ -655,7 +692,6 @@ export default function PDFAnnotator() {
                     key={ann.id}
                     onClick={() => {
                       setSelectedId(isSelected ? null : ann.id);
-                      // Скролл к комментарию
                       if (!isSelected) {
                         setTimeout(() => scrollToAnnotation(ann.id), 0);
                       }
@@ -707,6 +743,7 @@ export default function PDFAnnotator() {
                           color: tk.textFaint,
                           marginLeft: 6,
                           flexShrink: 0,
+                          boxShadow: "none",
                         })}
                         title="Удалить"
                       >
@@ -742,10 +779,9 @@ export default function PDFAnnotator() {
           >
             <button
               onClick={() => downloadJSON(annotations)}
-              style={baseBtn({
+              style={primaryBtn({
                 width: "100%",
                 padding: "8px 0",
-                fontWeight: 500,
               })}
             >
               ⬇ Экспорт JSON
@@ -796,24 +832,45 @@ export default function PDFAnnotator() {
                 marginLeft: "auto",
                 display: "flex",
                 alignItems: "center",
-                gap: 6,
+                gap: 12,
               }}
             >
-              <span
+              <div
                 style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: getType(activeTypeId).color,
-                  display: "inline-block",
-                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
                 }}
-              />
-              <span style={{ fontSize: 12, color: tk.textMuted }}>
-                {getType(activeTypeId).label} · выделите область
-              </span>
+              >
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: tk.colorSecondary,
+                    display: "inline-block",
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ fontSize: 12, color: tk.textMuted }}>
+                  {getType(activeTypeId).label} · выделите область
+                </span>
+              </div>
             </div>
           )}
+
+          {/* Theme toggle */}
+          <button
+            onClick={() => setIsDark(!isDark)}
+            style={baseBtn({
+              padding: "5px 11px",
+              marginLeft: "auto",
+              fontSize: 16,
+            })}
+            title={isDark ? "Светлая тема" : "Тёмная тема"}
+          >
+            {isDark ? "☀️" : "🌙"}
+          </button>
         </div>
 
         {/* ── Scrollable PDF area ── */}
@@ -1054,6 +1111,7 @@ export default function PDFAnnotator() {
                                   padding: "2px 9px",
                                   fontWeight: 600,
                                   fontFamily: "inherit",
+                                  transition: "all 0.2s ease",
                                 }}
                               >
                                 Удалить
@@ -1245,20 +1303,11 @@ export default function PDFAnnotator() {
               <button
                 onClick={saveComment}
                 disabled={!modalData.text.trim()}
-                style={{
+                style={primaryBtn({
                   padding: "8px 18px",
-                  borderRadius: 6,
-                  border: "none",
-                  background: modalData.text.trim()
-                    ? getType(modalData.typeId).color
-                    : tk.borderStrong,
-                  color: "#FFFFFF",
-                  cursor: modalData.text.trim() ? "pointer" : "not-allowed",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  fontFamily: "inherit",
                   opacity: modalData.text.trim() ? 1 : 0.55,
-                }}
+                  cursor: modalData.text.trim() ? "pointer" : "not-allowed",
+                })}
               >
                 Сохранить
               </button>
