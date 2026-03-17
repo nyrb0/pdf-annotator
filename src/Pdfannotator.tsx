@@ -226,6 +226,7 @@ export default function PDFAnnotator() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRefs = useRef<Record<number, HTMLImageElement | null>>({});
+  const annotationRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // ── Load pdf.js lazily ────────────────────────────────────────────────────
   const loadPdfJs = useCallback((): Promise<PdfJsLib> => {
@@ -344,6 +345,28 @@ export default function PDFAnnotator() {
     });
     setDrawing(null);
   };
+
+  // ── Scroll to annotation ──────────────────────────────────────────────────
+  const scrollToAnnotation = useCallback((annotationId: string): void => {
+    const element = annotationRefs.current[annotationId];
+    const container = containerRef.current;
+
+    if (!element || !container) return;
+
+    // Получаем позицию элемента относительно контейнера
+    const elementRect = element.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    // Вычисляем смещение от верхней части контейнера
+    const scrollOffset =
+      container.scrollTop + (elementRect.top - containerRect.top) - 100;
+
+    // Плавная прокрутка
+    container.scrollTo({
+      top: scrollOffset,
+      behavior: "smooth",
+    });
+  }, []);
 
   // ── Annotation CRUD ───────────────────────────────────────────────────────
   const saveComment = (): void => {
@@ -630,7 +653,13 @@ export default function PDFAnnotator() {
                 return (
                   <div
                     key={ann.id}
-                    onClick={() => setSelectedId(isSelected ? null : ann.id)}
+                    onClick={() => {
+                      setSelectedId(isSelected ? null : ann.id);
+                      // Скролл к комментарию
+                      if (!isSelected) {
+                        setTimeout(() => scrollToAnnotation(ann.id), 0);
+                      }
+                    }}
                     style={{
                       padding: "9px 11px",
                       marginBottom: 5,
@@ -640,6 +669,7 @@ export default function PDFAnnotator() {
                         : `1px solid ${tk.border}`,
                       background: isSelected ? t.bg : tk.bgSubtle,
                       cursor: "pointer",
+                      transition: "all 0.2s ease",
                     }}
                   >
                     <div
@@ -913,6 +943,9 @@ export default function PDFAnnotator() {
                     return (
                       <div
                         key={ann.id}
+                        ref={(el) => {
+                          annotationRefs.current[ann.id] = el;
+                        }}
                         onClick={(e: MouseEvent) => {
                           e.stopPropagation();
                           setSelectedId(isSelected ? null : ann.id);
@@ -928,6 +961,8 @@ export default function PDFAnnotator() {
                           background: `${t.bg}66`,
                           cursor: "pointer",
                           boxSizing: "border-box",
+                          transition: "all 0.15s ease",
+                          boxShadow: isSelected ? `0 0 0 3px ${t.bg}` : "none",
                         }}
                       >
                         {/* Type chip */}
