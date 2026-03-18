@@ -1,4 +1,4 @@
-import PDFAnnotator from "./Pdfannotator";
+import PDFAnnotator from "./pdf/PDFAnnotator";
 
 function App() {
   return (

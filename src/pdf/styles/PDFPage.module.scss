@@ -1,0 +1,99 @@
+.pdfPage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .pageWrapper {
+        position: relative;
+        border-radius: 3px;
+        line-height: 0;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+
+        img {
+            display: block;
+            height: auto;
+            cursor: crosshair;
+            user-drag: none;
+        }
+
+        .annotation {
+            position: absolute;
+            box-sizing: border-box;
+            cursor: pointer;
+            transition: all 0.15s ease;
+
+            .chip {
+                position: absolute;
+                top: -18px;
+                left: -1px;
+                color: #fff;
+                font-size: 9px;
+                padding: 1px 5px;
+                border-radius: 0 0 4px 0;
+                font-weight: 700;
+                white-space: nowrap;
+                max-width: 150px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                line-height: 1.5;
+            }
+
+            .tooltip {
+                position: absolute;
+                top: calc(100% + 5px);
+                left: 0;
+                border-radius: 10px;
+                padding: 11px 13px;
+                z-index: 100;
+                min-width: 220px;
+                max-width: 300px;
+                box-shadow: var(--shadow-modal);
+
+                .tooltipLabel {
+                    font-size: 11px;
+                    font-weight: 700;
+                    margin-bottom: 5px;
+                }
+
+                .tooltipText {
+                    font-size: 13px;
+                    line-height: 1.55;
+                    margin-bottom: 8px;
+                }
+
+                .tooltipFooter {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+
+                    .date {
+                        font-size: 11px;
+                    }
+
+                    .deleteBtn {
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-size: 11px;
+                        padding: 2px 9px;
+                        font-weight: 600;
+                        font-family: inherit;
+                        transition: all 0.2s ease;
+                    }
+                }
+            }
+        }
+
+        .previewRect {
+            position: absolute;
+            pointer-events: none;
+            box-sizing: border-box;
+        }
+    }
+
+    .pageLabel {
+        margin-top: 6px;
+        font-size: 11px;
+        color: var(--text-faint);
+    }
+}

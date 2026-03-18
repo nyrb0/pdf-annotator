@@ -1,0 +1,91 @@
+.topbar {
+    padding: 9px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+
+    .btn {
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        color: var(--text);
+        font-family: inherit;
+        transition: 0.2s;
+        padding: 5px 10px;
+
+        &:hover {
+            background: var(--bg-hover);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    .fileInfo {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .activeType {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+    }
+
+    .zoom {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-left: 14px;
+        border-left: 1px solid var(--border);
+
+        .btn {
+            padding: 5px 9px;
+            font-size: 14px;
+        }
+
+        .reset {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .zoomValue {
+            min-width: 45px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+    }
+
+    .themeBtn {
+        padding: 5px 11px;
+        font-size: 16px;
+    }
+}

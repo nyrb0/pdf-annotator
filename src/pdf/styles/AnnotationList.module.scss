@@ -1,0 +1,67 @@
+@use 'sass:color';
+
+.annotationList {
+    &__empty {
+        padding: 28px 0;
+        text-align: center;
+        font-size: 13px;
+        color: var(--text-faint);
+    }
+
+    &__item {
+        padding: 9px 11px;
+        margin-bottom: 5px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid var(--border);
+        background: var(--bg-subtle);
+
+        &.selected {
+            border: 1.5px solid var(--selected-border);
+            background: var(--selected-bg);
+        }
+
+        &__header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        &__type {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            line-height: 1.4;
+            background: var(--type-bg);
+            color: var(--type-color);
+            border: 1px solid var(--type-border);
+        }
+
+        &__delete {
+            border: none;
+            background: transparent;
+            padding: 0 2px;
+            font-size: 13px;
+            color: var(--text-faint);
+            margin-left: 6px;
+            flex-shrink: 0;
+            cursor: pointer;
+            box-shadow: none;
+        }
+
+        &__text {
+            font-size: 12.5px;
+            line-height: 1.5;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+
+        &__footer {
+            font-size: 11px;
+            color: var(--text-faint);
+        }
+    }
+}

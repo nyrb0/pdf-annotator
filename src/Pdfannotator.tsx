@@ -216,6 +216,9 @@ const PDF_JS_CDN =
 const PDF_JS_WORKER =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 const MAX_PAGE_W = 900;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2.5;
+const ZOOM_STEP = 0.1;
 
 // ─── Storage helpers ──────────────────────────────────────────────────────────
 
@@ -246,6 +249,10 @@ export default function PDFAnnotator() {
   const [loadingPdf, setLoadingPdf] = useState<boolean>(false);
   const [filterType, setFilterType] = useState<string>("all");
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  const [zoom, setZoom] = useState<number>(1);
+  const [visibleAnnotationTypes, setVisibleAnnotationTypes] = useState<
+    Set<string>
+  >(new Set(EXPERT_TYPES.map((t) => t.id)));
 
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRefs = useRef<Record<number, HTMLImageElement | null>>({});
@@ -299,6 +306,7 @@ export default function PDFAnnotator() {
         }
 
         setPages(result);
+        setZoom(1);
       } catch (err) {
         console.error("PDF load error:", err);
       } finally {
@@ -316,10 +324,20 @@ export default function PDFAnnotator() {
     const el = imgRefs.current[pageIndex];
     const page = pages[pageIndex];
     if (!el || !page) return null;
+
     const r = el.getBoundingClientRect();
-    const sx = page.width / r.width;
-    const sy = page.height / r.height;
-    return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+    const displayWidth = r.width;
+    const displayHeight = r.height;
+
+    // Прямой расчет: если displayWidth = page.width * zoom, то
+    // координата в PDF = (клик - левый край) * (page.width / displayWidth)
+    const sx = page.width / displayWidth;
+    const sy = page.height / displayHeight;
+
+    return {
+      x: (e.clientX - r.left) * sx,
+      y: (e.clientY - r.top) * sy,
+    };
   };
 
   // ── Drawing handlers ──────────────────────────────────────────────────────
@@ -409,12 +427,39 @@ export default function PDFAnnotator() {
     if (selectedId === id) setSelectedId(null);
   };
 
+  // ── Zoom handlers ────────────────────────────────────────────────────────
+  const handleZoom = (delta: number): void => {
+    setZoom((prev) => {
+      const newZoom = prev + delta;
+      return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+    });
+  };
+
+  const handleZoomReset = (): void => {
+    setZoom(1);
+  };
+
+  // ── Toggle annotation type visibility ────────────────────────────────────
+  const toggleAnnotationType = (typeId: string): void => {
+    setVisibleAnnotationTypes((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(typeId)) {
+        newSet.delete(typeId);
+      } else {
+        newSet.add(typeId);
+      }
+      return newSet;
+    });
+  };
+
   // ── Derived helpers ───────────────────────────────────────────────────────
   const getType = (id: string): ExpertType =>
     EXPERT_TYPES.find((t) => t.id === id) ?? EXPERT_TYPES[0];
 
   const pageAnns = (pi: number): Annotation[] =>
-    annotations.filter((a) => a.pageIndex === pi);
+    annotations
+      .filter((a) => a.pageIndex === pi)
+      .filter((a) => visibleAnnotationTypes.has(a.typeId));
 
   const filteredAnns: Annotation[] =
     filterType === "all"
@@ -422,14 +467,28 @@ export default function PDFAnnotator() {
       : annotations.filter((a) => a.typeId === filterType);
 
   // Scale annotation rect from PDF coords → display px
+  // Теперь используем проценты от текущего размера отображения
   const scaledRect = (
     rect: AnnotationRect,
     pageIndex: number,
   ): AnnotationRect => {
     const page = pages[pageIndex];
     if (!page) return rect;
-    const sx = Math.min(page.width, MAX_PAGE_W) / page.width;
-    return { x: rect.x * sx, y: rect.y * sx, w: rect.w * sx, h: rect.h * sx };
+
+    // Базовая ширина в пикселях (без зума)
+    const baseWidth = Math.min(page.width, MAX_PAGE_W);
+
+    // Масштаб от исходной ширины PDF к базовой ширине отображения
+    const baseScale = baseWidth / page.width;
+    // Итоговый масштаб с зумом
+    const finalScale = baseScale * zoom;
+
+    return {
+      x: rect.x * finalScale,
+      y: rect.y * finalScale,
+      w: rect.w * finalScale,
+      h: rect.h * finalScale,
+    };
   };
 
   // Live drawing preview rect in display px
@@ -437,12 +496,13 @@ export default function PDFAnnotator() {
     if (!drawing || drawing.pageIndex !== pageIndex) return null;
     const page = pages[pageIndex];
     if (!page) return null;
-    const sx = Math.min(page.width, MAX_PAGE_W) / page.width;
+    const baseScale = Math.min(page.width, MAX_PAGE_W) / page.width;
+    const finalScale = baseScale * zoom;
     return {
-      x: Math.min(drawing.startX, drawing.currentX) * sx,
-      y: Math.min(drawing.startY, drawing.currentY) * sx,
-      w: Math.abs(drawing.currentX - drawing.startX) * sx,
-      h: Math.abs(drawing.currentY - drawing.startY) * sx,
+      x: Math.min(drawing.startX, drawing.currentX) * finalScale,
+      y: Math.min(drawing.startY, drawing.currentY) * finalScale,
+      w: Math.abs(drawing.currentX - drawing.startX) * finalScale,
+      h: Math.abs(drawing.currentY - drawing.startY) * finalScale,
     };
   };
 
@@ -621,6 +681,72 @@ export default function PDFAnnotator() {
                     {t.label}
                   </span>
                 </button>
+              );
+            })}
+          </div>
+
+          {/* ── Annotation visibility filter (на PDF) ── */}
+          <div
+            style={{
+              padding: "12px 14px",
+              borderBottom: `1px solid ${tk.border}`,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                color: tk.textFaint,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                marginBottom: 8,
+              }}
+            >
+              Показывать на странице
+            </div>
+
+            {EXPERT_TYPES.map((t) => {
+              const isVisible = visibleAnnotationTypes.has(t.id);
+              return (
+                <label
+                  key={t.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    width: "100%",
+                    padding: "6px 9px",
+                    marginBottom: 3,
+                    borderRadius: 6,
+                    border: `1.5px solid transparent`,
+                    background: "transparent",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isVisible}
+                    onChange={() => toggleAnnotationType(t.id)}
+                    style={{
+                      width: 14,
+                      height: 14,
+                      cursor: "pointer",
+                      accentColor: t.color,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 12.5,
+                      color: isVisible ? t.color : tk.textMuted,
+                      fontWeight: isVisible ? 600 : 400,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {t.label}
+                  </span>
+                </label>
               );
             })}
           </div>
@@ -832,7 +958,7 @@ export default function PDFAnnotator() {
                 marginLeft: "auto",
                 display: "flex",
                 alignItems: "center",
-                gap: 12,
+                gap: 14,
               }}
             >
               <div
@@ -856,6 +982,67 @@ export default function PDFAnnotator() {
                   {getType(activeTypeId).label} · выделите область
                 </span>
               </div>
+
+              {/* ── Zoom controls ── */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  paddingLeft: 14,
+                  borderLeft: `1px solid ${tk.border}`,
+                }}
+              >
+                <button
+                  onClick={() => handleZoom(-ZOOM_STEP)}
+                  disabled={zoom <= MIN_ZOOM}
+                  style={baseBtn({
+                    padding: "5px 9px",
+                    fontSize: 14,
+                    opacity: zoom <= MIN_ZOOM ? 0.5 : 1,
+                    cursor: zoom <= MIN_ZOOM ? "not-allowed" : "pointer",
+                  })}
+                  title="Уменьшить"
+                >
+                  −
+                </button>
+                <div
+                  style={{
+                    minWidth: 45,
+                    textAlign: "center",
+                    fontSize: 12,
+                    color: tk.textMuted,
+                  }}
+                >
+                  {Math.round(zoom * 100)}%
+                </div>
+                <button
+                  onClick={() => handleZoom(ZOOM_STEP)}
+                  disabled={zoom >= MAX_ZOOM}
+                  style={baseBtn({
+                    padding: "5px 9px",
+                    fontSize: 14,
+                    opacity: zoom >= MAX_ZOOM ? 0.5 : 1,
+                    cursor: zoom >= MAX_ZOOM ? "not-allowed" : "pointer",
+                  })}
+                  title="Увеличить"
+                >
+                  +
+                </button>
+                <button
+                  onClick={handleZoomReset}
+                  disabled={zoom === 1}
+                  style={baseBtn({
+                    padding: "4px 8px",
+                    fontSize: 11,
+                    opacity: zoom === 1 ? 0.5 : 1,
+                    cursor: zoom === 1 ? "not-allowed" : "pointer",
+                  })}
+                  title="Сбросить масштаб"
+                >
+                  100%
+                </button>
+              </div>
             </div>
           )}
 
@@ -864,7 +1051,7 @@ export default function PDFAnnotator() {
             onClick={() => setIsDark(!isDark)}
             style={baseBtn({
               padding: "5px 11px",
-              marginLeft: "auto",
+              marginLeft: pages.length > 0 ? 0 : "auto",
               fontSize: 16,
             })}
             title={isDark ? "Светлая тема" : "Тёмная тема"}
@@ -970,6 +1157,7 @@ export default function PDFAnnotator() {
                     borderRadius: 3,
                     lineHeight: 0,
                     border: `1px solid ${tk.border}`,
+                    willChange: "contents",
                   }}
                 >
                   {/* PDF page image */}
@@ -981,8 +1169,8 @@ export default function PDFAnnotator() {
                     alt={`Страница ${page.pageNum}`}
                     style={{
                       display: "block",
-                      maxWidth: "100%",
-                      width: Math.min(page.width, MAX_PAGE_W),
+                      width: Math.min(page.width, MAX_PAGE_W) * zoom,
+                      height: "auto",
                       cursor: "crosshair",
                     }}
                     draggable={false}
@@ -1026,7 +1214,7 @@ export default function PDFAnnotator() {
                         <div
                           style={{
                             position: "absolute",
-                            top: -1,
+                            top: -18,
                             left: -1,
                             background: t.color,
                             color: "#FFFFFF",
