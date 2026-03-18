@@ -57,17 +57,15 @@ export function Sidebar({
             {/* ── Header ── */}
             <div className={styles.header}>
                 <div className={styles.headerTop}>
-                    <span className={styles.title}>АИС ЭКСПЕРТ</span>
+                    <span className={styles.title}>
+                        АИС ЭКСПЕРТ
+                        <img src='/logo.png' alt='Аис эксперт' />
+                    </span>
 
                     <button onClick={onCloseSidebar} className={styles.closeBtn} aria-label='Закрыть панель'>
                         ✕
                     </button>
                 </div>
-
-                <label style={{ display: 'block', cursor: 'pointer' }}>
-                    <div className={styles.uploadBox}>{pdfFileName ? `📄 ${pdfFileName}` : '📂 Загрузить PDF файл'}</div>
-                    <input type='file' accept='application/pdf' style={{ display: 'none' }} />
-                </label>
             </div>
 
             {/* ── Тип комментария ── */}

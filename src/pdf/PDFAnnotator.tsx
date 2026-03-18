@@ -39,7 +39,7 @@ export default function PDFAnnotator() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [loadingPdf, setLoadingPdf] = useState<boolean>(false);
     const [filterType, setFilterType] = useState<string>('all');
-    const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+    const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
     const [zoom, setZoom] = useState<number>(1);
     const [visibleAnnotationTypes, setVisibleAnnotationTypes] = useState<Set<string>>(new Set(EXPERT_TYPES.map(t => t.id)));
 
@@ -301,12 +301,14 @@ export default function PDFAnnotator() {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
+                                flexDirection: 'column',
                                 height: 200,
                                 color: tk.textMuted,
-                                fontSize: 14,
+                                fontSize: 16,
                             }}
                         >
-                            ⏳ Загрузка PDF...
+                            <AnimatedLogo />
+                            Загрузка PDF...
                         </div>
                     )}
 
@@ -393,5 +395,31 @@ export default function PDFAnnotator() {
                 getType={getType}
             />
         </div>
+    );
+}
+
+function AnimatedLogo() {
+    return (
+        <>
+            <style>
+                {`
+          @keyframes floatMove {
+            0%   { transform: translate(0px, 0px); }
+            25%  { transform: translate(5px, -5px); }
+            50%  { transform: translate(0px, -10px); }
+            75%  { transform: translate(-5px, -5px); }
+            100% { transform: translate(0px, 0px); }
+          }
+        `}
+            </style>
+            <img
+                src='/logo.png'
+                alt=''
+                style={{
+                    width: 50,
+                    animation: 'floatMove 3s ease-in-out infinite',
+                }}
+            />
+        </>
     );
 }
