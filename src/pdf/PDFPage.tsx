@@ -2,7 +2,8 @@ import { useEffect, useState, type MouseEvent } from 'react';
 import type { PageData, AnnotationRect, Annotation, Theme, ExpertType } from './types/types';
 import { captureAnnotationScreenshot } from './utils/utils';
 import styles from './styles/PDFPage.module.scss';
-
+import { FaRegFileAlt } from 'react-icons/fa';
+import { LiaCommentDotsSolid } from 'react-icons/lia';
 interface PDFPageProps {
     tk: Theme;
     page: PageData;
@@ -41,12 +42,22 @@ export function PDFPage({
     const MAX_PAGE_W = 900;
     const activeType = expertTypes[0];
     const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [previewData, setPreviewData] = useState<{
+        url: string;
+        pageNum: number;
+        annotationText: string;
+    } | null>(null);
     const handleCaptureScreenshot = async (ann: Annotation, sr: AnnotationRect, img: HTMLImageElement | null) => {
         const url = await captureAnnotationScreenshot(img, sr);
         if (url) {
-            setPreviewImage(url);
+            setPreviewData({
+                url,
+                pageNum: ann.pageNum,
+                annotationText: ann.text,
+            });
         }
     };
+
     useEffect(() => {
         return () => {
             if (previewImage) URL.revokeObjectURL(previewImage);
@@ -54,29 +65,21 @@ export function PDFPage({
     }, [previewImage]);
     return (
         <>
-            {previewImage && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'rgba(0,0,0,0.7)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 9999,
-                    }}
-                    onClick={() => setPreviewImage(null)}
-                >
-                    <img
-                        src={previewImage}
-                        alt='preview'
-                        style={{
-                            maxWidth: '90%',
-                            maxHeight: '90%',
-                            borderRadius: 3,
-                            boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-                        }}
-                    />
+            {previewData && (
+                <div className={styles.previewOverlay} onClick={() => setPreviewData(null)}>
+                    <div className={styles.previewOverlay__content} onClick={e => e.stopPropagation()}>
+                        <div className={styles.previewOverlay__info}>
+                            <div className={styles.previewOverlay__infoRow}>
+                                <FaRegFileAlt style={{ marginRight: 6 }} />
+                                <span>Страница: {previewData.pageNum}</span>
+                            </div>
+                            <div className={styles.previewOverlay__infoRow}>
+                                <LiaCommentDotsSolid />
+                                <span>Комментарии: {previewData.annotationText}</span>
+                            </div>
+                        </div>
+                        <img src={previewData.url} alt='preview' className={styles.previewOverlay__image} />
+                    </div>
                 </div>
             )}
             <div
