@@ -1,6 +1,7 @@
 import type { PdfJsLib, PageData, RelativeCoords, AnnotationRect, Annotation } from '../types/types';
 import { PDF_JS_CDN, PDF_JS_WORKER, MAX_PAGE_W } from '../types/types';
 import { MouseEvent as ReactMouseEvent } from 'react';
+
 // ── Load pdf.js lazily ────────────────────────────────────────────────────
 export const loadPdfJs = (): Promise<PdfJsLib> => {
     if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
@@ -59,7 +60,7 @@ export const getCoords = (
 
     const sx = pageWidth / displayWidth;
     const displayHeight = (pageHeight / pageWidth) * displayWidth;
-    const sy = pageHeight / displayHeight; // ✅ ВЕРНО
+    const sy = pageHeight / displayHeight;
 
     return {
         x: (e.clientX - r.left) * sx,
@@ -80,6 +81,42 @@ export const scaledRect = (rect: AnnotationRect, pageWidth: number, zoom: number
     };
 };
 
+// ── Capture annotation screenshot ────────────────────────────────────────
+/**
+ * Скачивает скриншот выделенной области аннотации
+ * @param ann - объект аннотации
+ * @param imgElement - HTML элемент img с PDF страницей
+ * @param sr - масштабированные координаты прямоугольника (в пиксельях отображения)
+ */
+export const captureAnnotationScreenshot = (imgElement: HTMLImageElement | null, sr: AnnotationRect): Promise<string | null> => {
+    return new Promise(resolve => {
+        if (!imgElement) return resolve(null);
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(null);
+
+        // 🔥 масштаб между отображением и реальным изображением
+        const scaleX = imgElement.naturalWidth / imgElement.clientWidth;
+        const scaleY = imgElement.naturalHeight / imgElement.clientHeight;
+
+        // 🔥 реальные координаты
+        const realX = sr.x * scaleX;
+        const realY = sr.y * scaleY;
+        const realW = sr.w * scaleX;
+        const realH = sr.h * scaleY;
+
+        canvas.width = realW;
+        canvas.height = realH;
+
+        ctx.drawImage(imgElement, realX, realY, realW, realH, 0, 0, realW, realH);
+
+        canvas.toBlob(blob => {
+            if (!blob) return resolve(null);
+            resolve(URL.createObjectURL(blob));
+        }, 'image/png');
+    });
+};      
 // ── Storage helpers ──────────────────────────────────────────────────────
 export const downloadJSON = (list: Annotation[]): void => {
     const blob = new Blob([JSON.stringify(list, null, 2)], {
