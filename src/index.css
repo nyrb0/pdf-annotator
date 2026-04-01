@@ -1,4 +1,16 @@
+:root {
+    --gradient-main: linear-gradient(180deg, #0c2c1c 0%, #1a5031 50%, #2d7d46 100%);
+    --gradient-secondary: linear-gradient(135deg, #23c634, #6366f1);
+    --color-secondary: #1b6845;
+}
+a,
+a:visited,
+a:hover,
+a:active {
+    text-decoration: none;
+    color: inherit;
+}
 * {
-  padding: 0;
-  margin: 0;
+    padding: 0;
+    margin: 0;
 }

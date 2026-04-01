@@ -40,7 +40,15 @@
         align-items: center;
         gap: 14px;
     }
-
+    .profile {
+        display: flex;
+        gap: 10px;
+        img {
+            width: 39px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+    }
     .activeType {
         display: flex;
         align-items: center;

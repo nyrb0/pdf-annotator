@@ -1,6 +1,7 @@
 import type { Theme, ExpertType } from './types/types';
 import styles from './styles/Topbar.module.scss';
-
+import { FaUserAlt } from 'react-icons/fa';
+import { useAuthStore } from '../store/auth.store';
 interface TopbarProps {
     tk: Theme;
     pdfFileName: string | null;
@@ -34,6 +35,7 @@ export function Topbar({
     minZoom,
     maxZoom,
 }: TopbarProps) {
+    const { user } = useAuthStore();
     return (
         <div
             className={styles.topbar}
@@ -51,9 +53,7 @@ export function Topbar({
                     ☰ Панель
                 </button>
             )}
-
             <span className={styles.fileInfo}>{pdfFileName ? `${pdfFileName} · ${pagesCount} стр.` : 'Загрузите PDF для начала работы'}</span>
-
             {pagesCount > 0 && (
                 <div className={styles.right}>
                     <div className={styles.activeType}>
@@ -79,7 +79,6 @@ export function Topbar({
                     </div>
                 </div>
             )}
-
             <button
                 onClick={onToggleDarkMode}
                 className={`${styles.btn} ${styles.themeBtn}`}
@@ -88,6 +87,17 @@ export function Topbar({
             >
                 {isDark ? '☀️' : '🌙'}
             </button>
+            <div className={styles.profile}>
+                <p>
+                    {user?.surname} {user?.name}
+                </p>
+
+                <img
+                    onClick={() => window.open(`http://localhost:5173/${user?.role}/profile`, '_blank')}
+                    src='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQoKZ5ev0ls_lfr-UBnDRwp5-Jh2u3INVeJig&s'
+                    alt=''
+                />
+            </div>
         </div>
     );
 }
