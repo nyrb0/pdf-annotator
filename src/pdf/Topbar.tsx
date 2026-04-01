@@ -93,7 +93,7 @@ export function Topbar({
                 </p>
 
                 <img
-                    onClick={() => window.open(`http://localhost:5173/${user?.role}/profile`, '_blank')}
+                    onClick={() => window.open(`https://expert.edu.kg/${user?.role}/profile`, '_blank')}
                     src='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQoKZ5ev0ls_lfr-UBnDRwp5-Jh2u3INVeJig&s'
                     alt=''
                 />
