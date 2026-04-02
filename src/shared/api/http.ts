@@ -7,7 +7,7 @@ const urls = {
     server: 'https://docs.expert.edu.kg/api',
     local: 'http://192.168.60.124:9876',
 };
-export const baseURL = urls.local;
+export const baseURL = urls.server;
 
 const setting = {
     baseURL: `${baseURL}/api`,
