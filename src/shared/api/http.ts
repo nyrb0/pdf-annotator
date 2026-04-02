@@ -4,7 +4,7 @@ import { getTokenFromStorage } from './auth-token';
 import { useAuthStore } from '../../store/auth.store';
 
 const urls = {
-    server: 'https://docs.expert.edu.kg/api',
+    server: 'https://docs.expert.edu.kg',
     local: 'http://192.168.60.124:9876',
 };
 export const baseURL = urls.server;
